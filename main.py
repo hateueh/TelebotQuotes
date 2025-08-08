@@ -7,25 +7,11 @@ from flask import Flask
 TOKEN = "8147378986:AAEZebfAw_Kd6YTVPZUtG8yc48QMyjSKzFo"
 CHAT_ID = "@kitquotes"
 
-# بيانات GitHub
-GITHUB_TOKEN = "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"
-GIST_ID = "22148fc45d3347e49bbfbe52b972c00e"
-FILENAME = "gistfile1.txt"
-
-# جلب الاقتباس من GitHub Gist
-def get_quote():
-    url = f"https://api.github.com/gists/{GIST_ID}"
-    headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code == 200:
-        gist_data = response.json()
-        content = gist_data["files"][FILENAME]["content"]
-        lines = content.splitlines()
-        return random.choice(lines) if lines else "لا توجد اقتباسات متاحة."
-    else:
-        print("فشل في جلب البيانات:", response.status_code)
-        return "لا يمكن تحميل الاقتباسات حاليا."
+# جلب المحتوى من GitHub
+url = "https://gist.githubusercontent.com/hateueh/22148fc45d3347e49bbfbe52b972c00e/raw/126e4d046fc26311a8a9d3c0b077dbfb68307a5f/gistfile1.txt"
+response = requests.get(url)
+quotes_list = response.text.splitlines()  # تقسيم النص إلى أسطر (كل سطر عبارة عن اقتباس)
+print('✅ تم جلب المحتوى')
 
 # إرسال الرسالة عبر Telegram
 def send_message(text):
@@ -40,12 +26,15 @@ def send_message(text):
 # تشغيل البوت
 def run_bot():
     while True:
-        message = get_quote()
-        if message.strip():  # التأكد من أن الرسالة ليست فارغة
-            send_message(message)
-            print("✅ تم الإرسال:", message)
+        if quotes_list:
+            random_quote = random.choice(quotes_list)  # اختيار سطر عشوائي
+            if random_quote.strip():  # التأكد من أن السطر ليس فارغًا
+                send_message(random_quote)
+                print(f"✅ تم الإرسال: {random_quote[:50]}...")  # طباعة جزء من الاقتباس لتجنب إطالة الإخراج
+            else:
+                print("🚫 سطر فارغ، يتم تخطيه.")
         else:
-            print("🚫 لا يوجد اقتباسات لإرسالها.")
+            print("🚫 لا يوجد اقتباسات متاحة.")
         time.sleep(1800)  # انتظر 30 دقيقة (1800 ثانية)
 
 # سيرفر ويب صغير
@@ -62,7 +51,5 @@ def run_web():
 if __name__ == '__main__':
     t1 = Thread(target=run_web)
     t2 = Thread(target=run_bot)
-    
     t1.start()
-
     t2.start()
